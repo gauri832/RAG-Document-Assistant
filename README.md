@@ -1,10 +1,9 @@
-# Document Q&A Assistant (RAG)
+# DocuMind-RAG: Document Q&A Assistant
 
-Minimal Retrieval-Augmented Generation app using:
-- FastAPI backend
-- Plain HTML/JS frontend
-- OpenAI embeddings + chat completion
-- In-memory chunk embedding store (no database)
+A simple RAG-based application that lets you upload documents and ask questions about them.  
+It retrieves relevant context from the document and generates grounded answers with source references.
+
+Built as a lightweight end-to-end system using FastAPI, TF-IDF retrieval, and an LLM.
 
 ## Features
 
