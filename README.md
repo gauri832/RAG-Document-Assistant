@@ -1,4 +1,4 @@
-# DocuMind-RAG: Document Q&A Assistant
+# RAG: Document Q&A Assistant
 
 🎥 **Demo Video:** https://www.loom.com/share/bfd8458b0f434d9da04bca28312a3e3a
 
