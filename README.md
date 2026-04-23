@@ -1,5 +1,7 @@
 # DocuMind-RAG: Document Q&A Assistant
 
+🎥 **Demo Video:** https://www.loom.com/share/bfd8458b0f434d9da04bca28312a3e3a
+
 A simple RAG-based application that lets you upload documents and ask questions about them.  
 It retrieves relevant context from the document and generates grounded answers with source references.
 
