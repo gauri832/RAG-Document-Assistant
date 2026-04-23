@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Q&A Assistant (RAG)</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+      :root {
+        --bg: #f6f8f3;
+        --bg-accent: #e9efe1;
+        --surface: #ffffff;
+        --surface-2: #f2f4ed;
+        --text: #132016;
+        --muted: #4a5a4a;
+        --brand: #0f766e;
+        --brand-2: #285943;
+        --line: #d6dece;
+        --danger: #b42318;
+        --shadow: 0 14px 28px rgba(19, 32, 22, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Space Grotesk", sans-serif;
+        background:
+          radial-gradient(circle at 15% -10%, #dbead0 0%, transparent 38%),
+          radial-gradient(circle at 85% 0%, #d8e8f7 0%, transparent 35%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-accent) 100%);
+      }
+
+      .wrap {
+        max-width: 980px;
+        margin: 2rem auto 3rem;
+        padding: 0 1rem;
+        animation: reveal 0.45s ease;
+      }
+
+      .hero {
+        margin-bottom: 1rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+        letter-spacing: -0.02em;
+      }
+
+      .subtitle {
+        margin: 0.55rem 0 0;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .card {
+        background: linear-gradient(180deg, var(--surface), var(--surface-2));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 1rem;
+        box-shadow: var(--shadow);
+      }
+
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem;
+      }
+
+      input[type="file"] {
+        max-width: 100%;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.92rem;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0.75rem;
+        background: #fff;
+      }
+
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 0.58rem 1rem;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--brand), var(--brand-2));
+        color: white;
+        cursor: pointer;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        min-height: 1.3rem;
+        margin: 0.65rem 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .error {
+        color: var(--danger);
+      }
+
+      .answer {
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 0.9rem;
+        background: #fff;
+        font-family: "IBM Plex Mono", monospace;
+        white-space: pre-wrap;
+      }
+
+      .source {
+        margin-top: 0.75rem;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 12px;
+        padding: 0.75rem;
+      }
+
+      .source-title {
+        margin: 0 0 0.45rem;
+        font-size: 0.92rem;
+        color: var(--brand-2);
+        font-weight: 700;
+      }
+
+      .source pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.87rem;
+      }
+
+      .chip {
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .loading::after {
+        content: " ...";
+        display: inline-block;
+        animation: dots 1.2s infinite steps(4, end);
+      }
+
+      @keyframes dots {
+        0% { content: " ."; }
+        25% { content: " .."; }
+        50% { content: " ..."; }
+        75% { content: " ...."; }
+        100% { content: " ."; }
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .wrap {
+          margin-top: 1.2rem;
+        }
+        .card {
+          border-radius: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <h1>Document Q&A Assistant</h1>
+        <p class="subtitle">Upload a PDF or DOCX, ask naturally, and get grounded answers with source chunks.</p>
+      </header>
+
+      <div class="grid">
+        <section class="card">
+          <h3>1) Upload Document <span class="chip">RAG In-Memory</span></h3>
+          <div class="row">
+            <input id="fileInput" type="file" accept=".pdf,.docx" />
+            <button id="uploadBtn">Upload</button>
+          </div>
+          <p id="uploadStatus" class="status"></p>
+        </section>
+
+        <section class="card">
+          <h3>2) Ask a Question</h3>
+          <textarea id="questionInput" placeholder="What datasets are used in this report?"></textarea>
+          <div class="row" style="margin-top: 0.65rem">
+            <button id="askBtn">Ask</button>
+            <span id="askStatus" class="status"></span>
+          </div>
+          <p id="askError" class="status error"></p>
+        </section>
+
+        <section class="card">
+          <h3>Answer</h3>
+          <div id="answerBox" class="answer">No answer yet.</div>
+          <h3 style="margin-top: 1rem">Sources</h3>
+          <div id="sourcesBox" class="status">No sources yet.</div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const uploadStatus = document.getElementById("uploadStatus");
+
+      const questionInput = document.getElementById("questionInput");
+      const askBtn = document.getElementById("askBtn");
+      const askStatus = document.getElementById("askStatus");
+      const askError = document.getElementById("askError");
+
+      const answerBox = document.getElementById("answerBox");
+      const sourcesBox = document.getElementById("sourcesBox");
+
+      uploadBtn.addEventListener("click", async () => {
+        uploadStatus.textContent = "";
+        askError.textContent = "";
+
+        const file = fileInput.files[0];
+        if (!file) {
+          uploadStatus.textContent = "Please choose a PDF or DOCX file.";
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        uploadBtn.disabled = true;
+        uploadStatus.classList.add("loading");
+        uploadStatus.textContent = "Uploading and processing";
+
+        try {
+          const res = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.detail || "Upload failed.");
+          }
+          uploadStatus.classList.remove("loading");
+          uploadStatus.textContent = `Uploaded: ${data.filename} | Chunks: ${data.chunks}`;
+        } catch (err) {
+          uploadStatus.classList.remove("loading");
+          uploadStatus.textContent = `Error: ${err.message}`;
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      });
+
+      askBtn.addEventListener("click", async () => {
+        askStatus.textContent = "";
+        askError.textContent = "";
+
+        const question = questionInput.value.trim();
+        if (!question) {
+          askError.textContent = "Please enter a question.";
+          return;
+        }
+
+        askBtn.disabled = true;
+        askStatus.classList.add("loading");
+        askStatus.textContent = "Retrieving context and generating answer";
+
+        try {
+          const res = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.detail || "Question failed.");
+          }
+
+          answerBox.textContent = data.answer || "No answer returned.";
+          sourcesBox.innerHTML = "";
+
+          const sources = data.sources || [];
+          if (sources.length === 0) {
+            sourcesBox.textContent = "No sources returned.";
+          } else {
+            sources.forEach((src, idx) => {
+              const card = document.createElement("div");
+              card.className = "source";
+
+              const title = document.createElement("p");
+              title.className = "source-title";
+              title.textContent = `Source ${idx + 1}`;
+
+              const block = document.createElement("pre");
+              block.textContent = src;
+
+              card.appendChild(title);
+              card.appendChild(block);
+              sourcesBox.appendChild(card);
+            });
+          }
+        } catch (err) {
+          askError.textContent = err.message;
+        } finally {
+          askBtn.disabled = false;
+          askStatus.classList.remove("loading");
+          askStatus.textContent = "";
+        }
+      });
+    </script>
+  </body>
+</html>
